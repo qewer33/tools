@@ -4,10 +4,13 @@ Static browser tool pages, deployed to GitHub Pages at `tools.qewer.dev`.
 
 ## Pages
 
+- `/` — index with links to all tools
 - `/bgremove/` — background removal, runs client-side (`@imgly/background-removal` via CDN, ONNX/WASM in-browser)
 - `/qrcode/` — QR code generator (`qrcode-generator` via CDN)
 
 Each page is a self-contained single file (`inline CSS + JS`, dependencies from CDNs) in its own folder as `index.html` for clean URLs.
+
+All pages share a light/dark theme (toggle top-right, persisted in `localStorage` under `tools-theme`, defaults to the system preference) via an inline copy of the same CSS variables.
 
 ## Setup
 

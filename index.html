@@ -4,11 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>tools.qewer.dev</title>
+    <script>
+        document.documentElement.dataset.theme =
+            localStorage.getItem("tools-theme") ??
+            (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    </script>
     <style>
+        :root {
+            color-scheme: dark;
+            --bg: #131417;
+            --surface: #191b20;
+            --surface-hover: #1c2027;
+            --border: #3a3e47;
+            --text: #e6e6e6;
+            --text-strong: #f5f5f5;
+            --muted: #9a9fa8;
+            --accent: #3b82f6;
+        }
+        [data-theme="light"] {
+            color-scheme: light;
+            --bg: #f4f5f7;
+            --surface: #ffffff;
+            --surface-hover: #eef1f5;
+            --border: #d7dade;
+            --text: #24292f;
+            --text-strong: #101418;
+            --muted: #6a737d;
+            --accent: #007bff;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #131417;
-            color: #e6e6e6;
+            background-color: var(--bg);
+            color: var(--text);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -18,46 +45,132 @@
         .container {
             padding: 2rem;
             width: 100%;
-            max-width: 480px;
+            max-width: 680px;
         }
-        h2 {
-            margin-top: 0;
-            color: #f5f5f5;
+        h1 {
+            margin: 0;
+            color: var(--text-strong);
             text-align: center;
+            font-size: 2rem;
         }
-        .links {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 20px;
+        p.subtitle {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.95rem;
+            margin: 0.6rem 0 28px;
         }
-        a {
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        .card {
             display: block;
-            padding: 15px;
-            background-color: #191b20;
-            border: 1px solid #3a3e47;
-            border-radius: 8px;
-            color: #cfd3da;
+            padding: 22px 20px;
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: inherit;
             text-decoration: none;
-            text-align: center;
-            font-size: 16px;
-            transition: border-color 0.2s, background-color 0.2s;
+            transition: border-color 0.15s, background-color 0.15s, transform 0.15s;
         }
-        a:hover {
-            border-color: #3b82f6;
-            background-color: #1c2027;
+        .card:hover {
+            border-color: var(--accent);
+            background-color: var(--surface-hover);
+            transform: translateY(-2px);
         }
+        .card svg {
+            width: 28px;
+            height: 28px;
+            color: var(--accent);
+        }
+        .card h3 {
+            margin: 12px 0 4px;
+            font-size: 1.05rem;
+            color: var(--text-strong);
+        }
+        .card p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 10;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: border-color 0.15s, background-color 0.15s;
+        }
+        .theme-toggle:hover {
+            background-color: var(--surface-hover);
+            border-color: var(--accent);
+        }
+        .theme-toggle svg {
+            width: 18px;
+            height: 18px;
+        }
+        [data-theme="dark"] .icon-moon { display: none; }
+        [data-theme="light"] .icon-sun { display: none; }
     </style>
 </head>
 <body>
 
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark theme" title="Toggle theme">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+    </svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+</button>
+
 <div class="container">
-    <h2>tools</h2>
-    <div class="links">
-        <a href="/bgremove/">Background Remover</a>
-        <a href="/qrcode/">QR Code Generator</a>
+    <h1>tools</h1>
+    <p class="subtitle">Small browser tools &mdash; everything runs locally, nothing leaves your device.</p>
+
+    <div class="grid">
+        <a class="card" href="/bgremove/">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="13" height="14" rx="2"/>
+                <circle cx="7.5" cy="9.5" r="1.5"/>
+                <path d="M16 19l-6.5-6.5L4 18"/>
+                <path d="M19.5 3l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" fill="currentColor" stroke="none"/>
+            </svg>
+            <h3>Background Remover</h3>
+            <p>Strip image backgrounds with an in-browser AI model.</p>
+        </a>
+        <a class="card" href="/qrcode/">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                <path d="M14 14h3v3h-3zM18 14h3M14 18v3M18 18h3v3"/>
+            </svg>
+            <h3>QR Code Generator</h3>
+            <p>Turn text or URLs into QR codes as PNG.</p>
+        </a>
     </div>
 </div>
+
+<script>
+    document.getElementById("themeToggle").addEventListener("click", () => {
+        const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem("tools-theme", next);
+    });
+</script>
 
 </body>
 </html>

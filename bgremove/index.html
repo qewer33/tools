@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Background Remover</title>
+    <script>
+        document.documentElement.dataset.theme =
+            localStorage.getItem("tools-theme") ??
+            (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    </script>
     <script type="importmap">
     {
         "imports": {
@@ -15,13 +20,13 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #131417;
+            background-color: var(--bg);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            color: #e6e6e6;
+            color: var(--text);
         }
         .container {
             padding: 2rem;
@@ -30,12 +35,12 @@
         }
         h2 {
             margin-top: 0;
-            color: #f5f5f5;
+            color: var(--text-strong);
             text-align: center;
         }
         p.subtitle {
             text-align: center;
-            color: #9a9fa8;
+            color: var(--muted);
             font-size: 0.9rem;
         }
         .settings {
@@ -59,15 +64,15 @@
         }
         .group-label {
             font-size: 0.8rem;
-            color: #9a9fa8;
+            color: var(--muted);
             margin-bottom: 6px;
         }
         .segbar {
             display: flex;
-            border: 1px solid #3a3e47;
+            border: 1px solid var(--border);
             border-radius: 8px;
             overflow: hidden;
-            background-color: #191b20;
+            background-color: var(--surface);
         }
         .segbar label {
             flex: 1;
@@ -84,34 +89,34 @@
             text-align: center;
             padding: 9px 4px;
             font-size: 0.85rem;
-            color: #9a9fa8;
+            color: var(--muted);
             white-space: nowrap;
             user-select: none;
-            border-left: 1px solid #3a3e47;
+            border-left: 1px solid var(--border);
             transition: background 0.15s, color 0.15s;
         }
         .segbar label:first-child span {
             border-left: none;
         }
         .segbar span:hover {
-            color: #cfd3da;
+            color: var(--text-hover);
         }
         .segbar input:checked + span {
-            background-color: #3b82f6;
+            background-color: var(--accent);
             color: white;
             font-weight: bold;
         }
         .segbar input:focus-visible + span {
-            outline: 2px solid #93c5fd;
+            outline: 2px solid var(--focus);
             outline-offset: -2px;
         }
         .dropzone {
-            border: 2px dashed #3a3e47;
+            border: 2px dashed var(--border);
             border-radius: 10px;
             padding: 2.5rem 1rem;
             text-align: center;
-            color: #9a9fa8;
-            background-color: #191b20;
+            color: var(--muted);
+            background-color: var(--surface);
             cursor: pointer;
             transition: border-color 0.2s, background-color 0.2s;
         }
@@ -122,38 +127,38 @@
         .dropzone p:first-child {
             margin-top: 0;
             font-weight: bold;
-            color: #cfd3da;
+            color: var(--text-hover);
         }
         .dropzone:hover, .dropzone.dragover {
-            border-color: #3b82f6;
-            background-color: #1c2027;
+            border-color: var(--accent);
+            background-color: var(--surface-hover);
         }
         .status {
             display: none;
             margin-top: 20px;
             padding: 15px;
             border-radius: 8px;
-            background-color: #191b20;
+            background-color: var(--surface);
             text-align: center;
         }
         .status .label {
-            color: #9a9fa8;
+            color: var(--muted);
             font-size: 0.9rem;
             margin-bottom: 10px;
         }
         .status.error .label {
-            color: #f87171;
+            color: var(--danger);
         }
         .progress {
             height: 8px;
             border-radius: 4px;
-            background-color: #2a2d34;
+            background-color: var(--track);
             overflow: hidden;
         }
         .progress .bar {
             height: 100%;
             width: 0%;
-            background-color: #3b82f6;
+            background-color: var(--accent);
             transition: width 0.15s linear;
         }
         .compare {
@@ -167,13 +172,13 @@
         }
         .compare .pane-label {
             text-align: center;
-            color: #9a9fa8;
+            color: var(--muted);
             font-size: 0.85rem;
             margin-bottom: 8px;
         }
         .checker {
-            background: repeating-conic-gradient(#26282e 0% 25%, #1a1c21 0% 50%) 0 / 24px 24px;
-            border: 1px solid #2a2d34;
+            background: repeating-conic-gradient(var(--checker-a) 0% 25%, var(--checker-b) 0% 50%) 0 / 24px 24px;
+            border: 1px solid var(--border-soft);
             border-radius: 8px;
             overflow: hidden;
         }
@@ -190,7 +195,7 @@
         button {
             flex: 1;
             padding: 13px;
-            background-color: #3b82f6;
+            background-color: var(--accent);
             color: white;
             border: none;
             border-radius: 8px;
@@ -200,22 +205,104 @@
             transition: background 0.2s;
         }
         button:hover {
-            background-color: #2563eb;
+            background-color: var(--accent-hover);
         }
         button.secondary {
-            background-color: #3a3e47;
+            background-color: var(--btn2);
         }
         button.secondary:hover {
-            background-color: #4b525e;
+            background-color: var(--btn2-hover);
         }
         button:disabled {
-            background-color: #2a2d34;
-            color: #6b7078;
+            background-color: var(--disabled-bg);
+            color: var(--disabled-text);
             cursor: not-allowed;
         }
+        :root {
+            color-scheme: dark;
+            --bg: #131417;
+            --surface: #191b20;
+            --surface-hover: #1c2027;
+            --border: #3a3e47;
+            --border-soft: #2a2d34;
+            --text: #e6e6e6;
+            --text-strong: #f5f5f5;
+            --text-hover: #cfd3da;
+            --muted: #9a9fa8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --focus: #93c5fd;
+            --btn2: #3a3e47;
+            --btn2-hover: #4b525e;
+            --disabled-bg: #2a2d34;
+            --disabled-text: #6b7078;
+            --danger: #f87171;
+            --checker-a: #26282e;
+            --checker-b: #1a1c21;
+            --track: #2a2d34;
+        }
+        [data-theme="light"] {
+            color-scheme: light;
+            --bg: #f4f5f7;
+            --surface: #ffffff;
+            --surface-hover: #eef1f5;
+            --border: #d7dade;
+            --border-soft: #e2e4e8;
+            --text: #24292f;
+            --text-strong: #101418;
+            --text-hover: #3c4148;
+            --muted: #6a737d;
+            --accent: #007bff;
+            --accent-hover: #0069d9;
+            --focus: #0b5ed7;
+            --btn2: #e9ecef;
+            --btn2-hover: #dee2e6;
+            --disabled-bg: #e9ecef;
+            --disabled-text: #868e96;
+            --danger: #dc3545;
+            --checker-a: #d3d7dc;
+            --checker-b: #e8eaee;
+            --track: #e2e4e8;
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 10;
+            width: 40px;
+            height: 40px;
+            flex: none;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+        }
+        .theme-toggle:hover {
+            background-color: var(--surface-hover);
+            border-color: var(--accent);
+        }
+        .theme-toggle svg {
+            width: 18px;
+            height: 18px;
+        }
+        [data-theme="dark"] .icon-moon { display: none; }
+        [data-theme="light"] .icon-sun { display: none; }
     </style>
 </head>
 <body>
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark theme" title="Toggle theme">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+    </svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+</button>
 <input type="file" id="fileInput" accept="image/*" hidden>
 
 <div class="container">
@@ -280,6 +367,11 @@
 
 <script type="module">
     import { removeBackground, removeForeground, segmentForeground } from "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/dist/index.mjs";
+    document.getElementById("themeToggle").addEventListener("click", () => {
+        const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem("tools-theme", next);
+    });
 
     const dropzone = document.getElementById("dropzone");
     const fileInput = document.getElementById("fileInput");
