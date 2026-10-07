@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Background Remover</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "onnxruntime-web": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.bundle.min.mjs",
+            "onnxruntime-web/webgpu": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.webgpu.bundle.min.mjs"
+        }
+    }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #131417;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #e6e6e6;
+        }
+        .container {
+            padding: 2rem;
+            width: 100%;
+            max-width: 700px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #f5f5f5;
+            text-align: center;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #9a9fa8;
+            font-size: 0.9rem;
+        }
+        .settings {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .settings-row {
+            display: flex;
+            gap: 14px;
+        }
+        .settings-row .group {
+            flex: 1;
+            min-width: 0;
+        }
+        @media (max-width: 560px) {
+            .settings-row {
+                flex-direction: column;
+            }
+        }
+        .group-label {
+            font-size: 0.8rem;
+            color: #9a9fa8;
+            margin-bottom: 6px;
+        }
+        .segbar {
+            display: flex;
+            border: 1px solid #3a3e47;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #191b20;
+        }
+        .segbar label {
+            flex: 1;
+            position: relative;
+            cursor: pointer;
+        }
+        .segbar input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .segbar span {
+            display: block;
+            text-align: center;
+            padding: 9px 4px;
+            font-size: 0.85rem;
+            color: #9a9fa8;
+            white-space: nowrap;
+            user-select: none;
+            border-left: 1px solid #3a3e47;
+            transition: background 0.15s, color 0.15s;
+        }
+        .segbar label:first-child span {
+            border-left: none;
+        }
+        .segbar span:hover {
+            color: #cfd3da;
+        }
+        .segbar input:checked + span {
+            background-color: #3b82f6;
+            color: white;
+            font-weight: bold;
+        }
+        .segbar input:focus-visible + span {
+            outline: 2px solid #93c5fd;
+            outline-offset: -2px;
+        }
+        .dropzone {
+            border: 2px dashed #3a3e47;
+            border-radius: 10px;
+            padding: 2.5rem 1rem;
+            text-align: center;
+            color: #9a9fa8;
+            background-color: #191b20;
+            cursor: pointer;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+        .dropzone p {
+            margin: 0.4rem 0 0;
+            font-size: 0.95rem;
+        }
+        .dropzone p:first-child {
+            margin-top: 0;
+            font-weight: bold;
+            color: #cfd3da;
+        }
+        .dropzone:hover, .dropzone.dragover {
+            border-color: #3b82f6;
+            background-color: #1c2027;
+        }
+        .status {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #191b20;
+            text-align: center;
+        }
+        .status .label {
+            color: #9a9fa8;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        .status.error .label {
+            color: #f87171;
+        }
+        .progress {
+            height: 8px;
+            border-radius: 4px;
+            background-color: #2a2d34;
+            overflow: hidden;
+        }
+        .progress .bar {
+            height: 100%;
+            width: 0%;
+            background-color: #3b82f6;
+            transition: width 0.15s linear;
+        }
+        .compare {
+            display: none;
+            margin-top: 20px;
+            gap: 14px;
+        }
+        .compare .pane {
+            flex: 1;
+            min-width: 0;
+        }
+        .compare .pane-label {
+            text-align: center;
+            color: #9a9fa8;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+        .checker {
+            background: repeating-conic-gradient(#26282e 0% 25%, #1a1c21 0% 50%) 0 / 24px 24px;
+            border: 1px solid #2a2d34;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .compare img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        .actions {
+            display: none;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            flex: 1;
+            padding: 13px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #2563eb;
+        }
+        button.secondary {
+            background-color: #3a3e47;
+        }
+        button.secondary:hover {
+            background-color: #4b525e;
+        }
+        button:disabled {
+            background-color: #2a2d34;
+            color: #6b7078;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+<input type="file" id="fileInput" accept="image/*" hidden>
+
+<div class="container">
+    <h2>Background Remover</h2>
+    <p class="subtitle">Runs fully in your browser &mdash; your image never leaves this page.</p>
+
+    <div class="settings">
+        <div class="group">
+            <div class="group-label">Model size</div>
+            <div class="segbar">
+                <label><input type="radio" name="model" value="small"><span>Small &middot; 42MB</span></label>
+                <label><input type="radio" name="model" value="medium" checked><span>Medium &middot; 84MB</span></label>
+                <label><input type="radio" name="model" value="large"><span>Large &middot; 168MB</span></label>
+            </div>
+        </div>
+        <div class="settings-row">
+            <div class="group">
+                <div class="group-label">Format</div>
+                <div class="segbar">
+                    <label><input type="radio" name="format" value="png" checked><span>PNG</span></label>
+                    <label><input type="radio" name="format" value="webp"><span>WebP</span></label>
+                </div>
+            </div>
+            <div class="group">
+                <div class="group-label">Mode</div>
+                <div class="segbar">
+                    <label><input type="radio" name="mode" value="bg" checked><span>Remove BG</span></label>
+                    <label><input type="radio" name="mode" value="fg"><span>Remove FG</span></label>
+                    <label><input type="radio" name="mode" value="mask"><span>Mask</span></label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dropzone" id="dropzone">
+        <p>Drop an image or paste with Ctrl/Cmd + V</p>
+        <p>or click here to choose a file</p>
+    </div>
+
+    <div class="status" id="status">
+        <div class="label" id="statusLabel">Loading model&hellip;</div>
+        <div class="progress" id="progress"><div class="bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="compare" id="compare">
+        <div class="pane">
+            <div class="pane-label">Original</div>
+            <div class="checker"><img id="originalImage" alt="Original image"></div>
+        </div>
+        <div class="pane">
+            <div class="pane-label">Result</div>
+            <div class="checker"><img id="resultImage" alt="Image with background removed"></div>
+        </div>
+    </div>
+
+    <div class="actions" id="actions">
+        <button id="downloadBtn" onclick="download()">Download PNG</button>
+        <button class="secondary" id="copyBtn" onclick="copyResult()">Copy to Clipboard</button>
+        <button class="secondary" id="resetBtn" onclick="reset()">New Image</button>
+    </div>
+</div>
+
+<script type="module">
+    import { removeBackground, removeForeground, segmentForeground } from "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/dist/index.mjs";
+
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("fileInput");
+    const status = document.getElementById("status");
+    const statusLabel = document.getElementById("statusLabel");
+    const progress = document.getElementById("progress");
+    const progressBar = document.getElementById("progressBar");
+    const compare = document.getElementById("compare");
+    const actions = document.getElementById("actions");
+
+    let busy = false;
+    let originalUrl = null;
+    let resultBlob = null;
+    let resultUrl = null;
+
+    dropzone.addEventListener("click", () => {
+        if (!busy) fileInput.click();
+    });
+
+    fileInput.addEventListener("change", () => {
+        if (fileInput.files.length > 0) handleFile(fileInput.files[0]);
+        fileInput.value = "";
+    });
+
+    document.addEventListener("paste", (e) => {
+        if (busy) return;
+        for (const item of e.clipboardData?.items ?? []) {
+            if (item.type.startsWith("image/")) {
+                const file = item.getAsFile();
+                if (file) {
+                    e.preventDefault();
+                    handleFile(file);
+                }
+                return;
+            }
+        }
+    });
+
+    // Keep the browser from navigating away when an image is dropped anywhere else.
+    window.addEventListener("dragover", (e) => e.preventDefault());
+    window.addEventListener("drop", (e) => e.preventDefault());
+
+    let dragDepth = 0;
+    document.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+        dragDepth++;
+        dropzone.classList.add("dragover");
+    });
+    document.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        dragDepth--;
+        if (dragDepth <= 0) {
+            dragDepth = 0;
+            dropzone.classList.remove("dragover");
+        }
+    });
+    document.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dragDepth = 0;
+        dropzone.classList.remove("dragover");
+        if (busy) return;
+        for (const file of e.dataTransfer?.files ?? []) {
+            if (file.type.startsWith("image/")) {
+                handleFile(file);
+                return;
+            }
+        }
+    });
+
+    function showStatus(label, error = false) {
+        status.style.display = "block";
+        status.classList.toggle("error", error);
+        statusLabel.innerHTML = label;
+    }
+
+    // Downloads happen per-resource and are cumulative within each resource,
+    // so summing all (current, total) pairs yields an overall percentage.
+    const downloadTotals = new Map();
+    const onProgress = (key, current, total) => {
+        if (!key.startsWith("fetch:")) return;
+        downloadTotals.set(key, { current, total });
+        let currentSum = 0;
+        let totalSum = 0;
+        for (const { current, total } of downloadTotals.values()) {
+            currentSum += current;
+            totalSum += total;
+        }
+        if (totalSum > 0) {
+            if (currentSum >= totalSum) {
+                // Fetch complete; inference has no progress events.
+                showStatus("Processing image&hellip;");
+            } else {
+                showStatus(`Downloading model&hellip; ${Math.round((100 * currentSum) / totalSum)}%`);
+                progressBar.style.width = `${(100 * currentSum) / totalSum}%`;
+            }
+        }
+    };
+
+    function radioValue(name) {
+        return document.querySelector(`input[name="${name}"]:checked`).value;
+    }
+
+    const modeFunctions = { bg: removeBackground, fg: removeForeground, mask: segmentForeground };
+    const downloadNames = { bg: "bgremoved", fg: "fgremoved", mask: "mask" };
+
+    async function handleFile(file) {
+        if (!file.type.startsWith("image/")) {
+            showStatus("Only image files are supported.", true);
+            return;
+        }
+
+        const mode = radioValue("mode");
+        const config = {
+            device: "gpu",
+            model: radioValue("model"),
+            output: { format: radioValue("format") === "webp" ? "image/webp" : "image/png" },
+            progress: onProgress
+        };
+
+        busy = true;
+        downloadTotals.clear();
+        resultBlob = null;
+
+        if (originalUrl) URL.revokeObjectURL(originalUrl);
+        originalUrl = URL.createObjectURL(file);
+        document.getElementById("originalImage").src = originalUrl;
+
+        compare.style.display = "flex";
+        actions.style.display = "flex";
+        document.getElementById("resultImage").removeAttribute("src");
+        setStatusButtons(false);
+        showStatus("Preparing&hellip;");
+        progress.style.display = "block";
+        progressBar.style.width = "0%";
+
+        try {
+            resultBlob = await modeFunctions[mode](file, config);
+            if (resultUrl) URL.revokeObjectURL(resultUrl);
+            resultUrl = URL.createObjectURL(resultBlob);
+            document.getElementById("resultImage").src = resultUrl;
+            setStatusButtons(true);
+            status.style.display = "none";
+        } catch (err) {
+            console.error(err);
+            setStatusButtons(false);
+            progress.style.display = "none";
+            showStatus("Failed to process the image. Check your connection and try again.", true);
+        } finally {
+            busy = false;
+        }
+    }
+
+    function setStatusButtons(enabled) {
+        document.getElementById("downloadBtn").disabled = !enabled;
+        document.getElementById("copyBtn").disabled = !enabled;
+        document.getElementById("resetBtn").disabled = !enabled && resultUrl === null;
+    }
+
+    async function copyResult() {
+        if (!resultBlob) return;
+        try {
+            await navigator.clipboard.write([
+                new ClipboardItem({ [resultBlob.type]: resultBlob })
+            ]);
+            const btn = document.getElementById("copyBtn");
+            btn.textContent = "Copied!";
+            setTimeout(() => (btn.textContent = "Copy to Clipboard"), 1200);
+        } catch (e) {
+            alert("Copy failed. Your browser may not support copying images.");
+        }
+    }
+
+    function download() {
+        if (!resultBlob) return;
+        const a = document.createElement("a");
+        a.href = resultUrl;
+        a.download = `${downloadNames[radioValue("mode")]}.${radioValue("format")}`;
+        a.click();
+    }
+
+    function reset() {
+        resultBlob = null;
+        if (originalUrl) {
+            URL.revokeObjectURL(originalUrl);
+            originalUrl = null;
+        }
+        if (resultUrl) {
+            URL.revokeObjectURL(resultUrl);
+            resultUrl = null;
+        }
+        compare.style.display = "none";
+        actions.style.display = "none";
+        status.style.display = "none";
+        document.getElementById("originalImage").removeAttribute("src");
+        document.getElementById("resultImage").removeAttribute("src");
+    }
+</script>
+
+</body>
+</html>
